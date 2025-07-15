@@ -16,8 +16,8 @@ class SampleDataset(Dataset):
 
 def train():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"); print(f"{device=}")
-    input_dim = 128
-    hidden_dim = 32
+    input_dim = 32
+    hidden_dim = 128
     num_experts = 4
     top_k = 2
     num_classes = 5

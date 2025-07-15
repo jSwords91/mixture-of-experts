@@ -6,4 +6,6 @@ Uses a basic expert which is easily extended, and a a top-k router with auxillar
 
 # To Do
 
+Weight calculations for inference v full model
+Capacity
 GPT with MoE
