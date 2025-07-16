@@ -23,7 +23,7 @@ class Router(nn.Module):
         assert self.k <= self.num_experts, "k must be <= num_experts"
         self.gate = nn.Linear(input_dim, num_experts, bias=False)
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(self, x):
         logits = self.gate(x)  # [B, E]
         scores = F.softmax(logits, dim=-1)
         topk_vals, topk_indices = torch.topk(scores, self.k, dim=-1) # [B, k]
@@ -50,14 +50,27 @@ class MoE(nn.Module):
     def forward(self, x):
         dispatch_mask, scores, aux_loss, topk_indices = self.router(x)
         B, D = x.shape
-        expert_outputs = torch.zeros_like(x, device=x.device)
+        batch_times_top_k = B * self.top_k
 
-        for i in range(self.num_experts):
-            mask = dispatch_mask[:, i].bool()
-            if mask.any():
-                x_i = x[mask]
-                y_i = self.experts[i](x_i)
-                expert_outputs[mask] += y_i * scores[mask, i].unsqueeze(-1)
+        x_expanded = x.unsqueeze(1).expand(B, self.top_k, D)
+        topk_scores = torch.gather(scores, 1, topk_indices)
 
-        logits = self.output_layer(expert_outputs)  # [B, num_classes]
+        # Flatten inputs, scores, and expert indices for batch routing
+        flat_inputs = x_expanded.reshape(batch_times_top_k, D)
+        flat_scores = topk_scores.reshape(batch_times_top_k, 1)
+        flat_expert_ids = topk_indices.reshape(batch_times_top_k)
+
+        all_outputs = torch.zeros_like(flat_inputs)
+
+        for i, expert in enumerate(self.experts):
+            expert_mask = (flat_expert_ids == i)
+            if expert_mask.any():
+                x_i = flat_inputs[expert_mask]
+                y_i = expert(x_i)
+                all_outputs[expert_mask] = y_i
+
+        all_outputs *= flat_scores
+        expert_outputs = all_outputs.view(B, self.top_k, D).sum(dim=1)
+        logits = self.output_layer(expert_outputs)
         return logits, aux_loss, dispatch_mask, scores
+

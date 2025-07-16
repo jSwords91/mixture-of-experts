@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from moe import MoE
+import time
 
 torch.manual_seed(42)
 
@@ -34,6 +35,7 @@ def train():
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     model.train()
+    t0 = time.time()
     for epoch in range(epochs):
         epoch_loss = 0.0
         epoch_ce_loss = 0.0
@@ -68,6 +70,9 @@ def train():
             print(f"Epoch {epoch+1:3d} | CE Loss: {avg_ce_loss:.6f} | Aux Loss: {avg_aux_loss:.6f} | Total: {avg_loss:.6f}")
             print(f"Expert usage: {usage_str}")
             print("-" * 70)
+
+    t1 = time.time()
+    print(f"Time taken: {t1 - t0:.2f} seconds")
 
 if __name__ == "__main__":
     train()
