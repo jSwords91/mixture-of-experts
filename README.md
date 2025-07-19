@@ -35,7 +35,10 @@ The key insight is that instead of using all experts for every input, we only us
 
 The auxiliary loss is designed to encourage **load balancing** among experts. Here's the mathematical formulation:
 
-$$\mathcal{L}_{aux} = \frac{E}{B^2} \sum_{i=1}^{E} f_i \cdot P_i$$
+$$
+\mathcal{L}_{aux} = \frac{E}{B^2} \sum_{i=1}^{E} f_i \cdot P_i
+$$
+
 
 Where:
 - $E$ = number of experts
